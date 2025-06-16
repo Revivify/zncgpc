@@ -235,10 +235,11 @@ def create_vm_instance(project_id: str, zone: str, instance_name: str,
         operation = instance_client.insert(project=project_id, zone=zone, instance_resource=instance_resource)
 
         op_start_time = time.time()
+        zone_operation_client = compute_v1.ZoneOperationsClient()
         while operation.status != compute_v1.Operation.Status.DONE:
             time.sleep(5)
-            # For zonal operations, use the InstancesClient's get method for the operation
-            operation = instance_client.get(project=project_id, zone=zone, operation=operation.name)
+            # Poll the zonal operation using ZoneOperationsClient
+            operation = zone_operation_client.get(project=project_id, zone=zone, operation=operation.name)
             elapsed_time = time.time() - op_start_time
             print(f"INFO: Waiting for instance creation operation to complete... Status: {operation.status.name} (Elapsed: {elapsed_time:.0f}s)")
             if elapsed_time > 600: # 10 minutes timeout
@@ -313,9 +314,11 @@ def assign_static_ip_to_vm(project_id: str, zone: str, instance_name: str, ip_ad
         )
 
         op_start_time = time.time()
+        # For zonal operations, use ZoneOperationsClient
+        zone_operation_client = compute_v1.ZoneOperationsClient()
         while operation.status != compute_v1.Operation.Status.DONE:
             time.sleep(5)
-            operation = instance_client.get(project=project_id, zone=zone, operation=operation.name) # Poll zonal operation
+            operation = zone_operation_client.get(project=project_id, zone=zone, operation=operation.name) # Poll zonal operation
             elapsed_time = time.time() - op_start_time
             print(f"INFO: Waiting for IP assignment operation to complete... Status: {operation.status.name} (Elapsed: {elapsed_time:.0f}s)")
             if elapsed_time > 300: # 5 minutes timeout
