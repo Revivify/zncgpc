@@ -15,10 +15,14 @@ The deployment aims to follow the guidance in `plan.md` for a cost-effective set
 *   **Permissions:** Ensure the user account or service account used for authentication has the necessary IAM roles. Minimally, this includes:
     *   `Compute Admin` (or `roles/compute.admin`) for creating and managing VMs, disks, static IPs, and firewalls.
     *   `Service Account User` (or `roles/iam.serviceAccountUser`) if the VM will run under a specific service account (though this script uses the default Compute Engine service account).
-*   **Install Python Libraries:**
-    ```bash
-    pip install google-cloud-compute google-api-python-client
-    ```
+
+#### Installing Dependencies
+This project uses a `requirements.txt` file to manage Python dependencies. To install them, run:
+```bash
+pip install -r requirements.txt
+```
+This will install `google-cloud-compute` and `google-api-python-client`.
+
 *   **Authenticate for Application Default Credentials (ADC):**
     The Python script uses ADC to authenticate.
     ```bash
@@ -29,8 +33,24 @@ The deployment aims to follow the guidance in `plan.md` for a cost-effective set
 
 *   `deploy_znc.py`: The main Python script for deploying and managing GCP resources for the ZNC VM.
 *   `startup-script.sh`: A shell script that is executed on the VM's first boot. It handles installing ZNC, creating a dedicated user, and setting up ZNC as a systemd service.
+*   `requirements.txt`: Lists the Python dependencies required for the project.
+*   `Makefile`: Provides convenient targets for common operations like installing dependencies and cleaning the project.
 *   `plan.md`: The original planning document outlining the intended architecture and deployment strategy.
 *   `README.md`: This file, providing documentation for the project.
+
+# Using the Makefile
+
+A `Makefile` is provided to simplify common operations. Here are the available targets:
+
+*   `make help`: Displays a help message with all available targets. This is also the default target if you just run `make`.
+*   `make install`: Installs all necessary Python dependencies from `requirements.txt` using pip.
+*   `make deploy`: Shows an example command to run the `deploy_znc.py` script. You will need to replace placeholder values like `YOUR_PROJECT_ID` in the example command. This target does not execute the deployment but prints the command for your convenience.
+*   `make clean-pyc`: Removes Python bytecode files (`.pyc`, `.pyo`), editor backup files (`*~`), and `__pycache__` directories from the project.
+
+To run a target, simply type `make <target_name>` in your terminal from the project's root directory. For example:
+```bash
+make install
+```
 
 # Deployment Steps
 

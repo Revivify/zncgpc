@@ -1,0 +1,2 @@
+google-cloud-compute
+google-api-python-client
