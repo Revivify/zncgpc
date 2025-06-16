@@ -32,6 +32,7 @@ This will install `google-cloud-compute` and `google-api-python-client`.
 # Included Files
 
 *   `deploy_znc.py`: The main Python script for deploying and managing GCP resources for the ZNC VM.
+*   `undeploy_znc.py`: The Python script for deprovisioning/deleting the ZNC GCP resources.
 *   `startup-script.sh`: A shell script that is executed on the VM's first boot. It handles installing ZNC, creating a dedicated user, and setting up ZNC as a systemd service.
 *   `requirements.txt`: Lists the Python dependencies required for the project.
 *   `Makefile`: Provides convenient targets for common operations like installing dependencies and cleaning the project.
@@ -163,29 +164,48 @@ The `deploy_znc.py` script provisions the infrastructure and the `startup-script
     *   [GCP Free Tier Documentation](https://cloud.google.com/free/docs/gcp-free-tier)
     *   [Compute Engine Pricing](https://cloud.google.com/compute/all-pricing)
 
-# Deprovisioning
+# Undeploying Resources (Cleanup)
 
-To avoid ongoing charges, especially for resources like static IP addresses, you should delete the resources created by the script when they are no longer needed.
+To avoid ongoing charges for unused resources, especially the VM instance and any reserved static IP address, it's important to delete them when they are no longer needed. The `undeploy_znc.py` script is provided to automate this process.
 
-*   **Delete VM Instance:** This will also delete the boot disk if `auto_delete` was set (which it is by default in the script).
-    ```bash
-    gcloud compute instances delete YOUR_INSTANCE_NAME --project YOUR_PROJECT_ID --zone YOUR_ZONE
-    ```
-    Example: `gcloud compute instances delete znc-bouncer-vm --project my-gcp-project --zone us-central1-c`
+The script will attempt to delete:
+1.  The ZNC VM instance.
+2.  The static IP address (if a `--static-ip-name` was specified during deployment and is provided to the undeploy script).
+3.  The firewall rule associated with ZNC access.
 
-*   **Delete Static IP Address:** (Only if you used `--static-ip-name`)
-    ```bash
-    gcloud compute addresses delete YOUR_STATIC_IP_NAME --project YOUR_PROJECT_ID --region YOUR_REGION
-    ```
-    Example: `gcloud compute addresses delete znc-static-ip --project my-gcp-project --region us-central1`
+## Command-Line Usage
 
-*   **Delete Firewall Rule:**
-    ```bash
-    gcloud compute firewall-rules delete YOUR_FIREWALL_RULE_NAME --project YOUR_PROJECT_ID
-    ```
-    Example: `gcloud compute firewall-rules delete allow-znc-access --project my-gcp-project`
+```bash
+python undeploy_znc.py --project-id YOUR_PROJECT_ID --zone YOUR_ZONE [OPTIONS]
+```
 
-**Note:** The `deploy_znc.py` script does not currently implement automated deprovisioning. These steps must be performed manually using `gcloud` CLI or the Google Cloud Console.
+### Arguments:
+
+*   `--project-id YOUR_PROJECT_ID`: **(Required)** Your Google Cloud project ID.
+*   `--zone YOUR_ZONE`: **(Required)** The GCP zone where the VM instance was created (e.g., `us-central1-c`).
+*   `--instance-name NAME`: Name of the VM instance to delete. Defaults to `znc-bouncer-vm`.
+*   `--static-ip-name NAME`: Name of the static IP address to delete. If you reserved a static IP during deployment, you must provide its name here to delete it. If omitted, static IP deletion is skipped.
+*   `--region REGION`: Region of the static IP address. Required if `--static-ip-name` is provided. If not specified, the script will attempt to derive it from the `--zone` argument.
+*   `--firewall-rule-name NAME`: Name of the firewall rule to delete. Defaults to `allow-znc-access` (this should match the default used by `deploy_znc.py`).
+*   `--yes`: A boolean flag (include as `--yes`) to bypass the interactive confirmation prompt and proceed directly with deletions.
+
+### Example Command:
+
+```bash
+python undeploy_znc.py \
+    --project-id my-gcp-project \
+    --zone us-central1-c \
+    --instance-name znc-bouncer-vm \
+    --static-ip-name znc-static-ip \
+    --firewall-rule-name allow-znc-access
+```
+Adjust the parameters to match the resources you deployed. If you did not use a static IP, omit the `--static-ip-name` and `--region` arguments.
+
+### Confirmation Prompt
+
+By default, the `undeploy_znc.py` script will list the resources it plans to delete and ask for your confirmation before proceeding. To bypass this prompt (e.g., in automated environments), you can use the `--yes` flag.
+
+**Important:** Always double-check the parameters to ensure you are deleting the correct resources. Deletion is irreversible.
 
 # TODO / Future Enhancements
 
