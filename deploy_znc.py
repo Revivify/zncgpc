@@ -1,3 +1,4 @@
+from google.api_core.exceptions import NotFound
 import google.cloud.compute_v1 as compute_v1
 import argparse
 import time
@@ -28,7 +29,7 @@ def reserve_static_ip(project_id: str, region: str, address_name: str) -> comput
             existing_address = address_client.get(project=project_id, region=region, address=address_name)
             print(f"INFO: Static IP address '{address_name}' already exists in region {region}: {existing_address.address}")
             return existing_address
-        except compute_v1.services.addresses.pagers.GetPager._NOT_FOUND: # More specific exception
+        except NotFound:
             print(f"INFO: Static IP address '{address_name}' not found in region {region}. Attempting to create...")
         except Exception as e: # Catch other potential errors during get
             print(f"WARNING: Error checking for existing IP address '{address_name}': {e}. Will attempt creation.")
@@ -113,7 +114,7 @@ def create_firewall_rule(project_id: str, firewall_rule_name: str, network_name:
                     print(f"WARNING: Firewall rule '{firewall_rule_name}' already exists but has different configuration. Manual review recommended.")
                     # Not returning False, as it exists. User might need to delete/update it.
                     return True # Or False, depending on desired behavior for mismatches
-        except compute_v1.services.firewalls.pagers.GetPager._NOT_FOUND:
+        except NotFound:
             print(f"INFO: Firewall rule '{firewall_rule_name}' not found. Attempting to create...")
         except Exception as e:
             print(f"WARNING: Error checking for existing firewall rule '{firewall_rule_name}': {e}. Will attempt creation.")
