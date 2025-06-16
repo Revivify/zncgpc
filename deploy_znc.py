@@ -183,7 +183,7 @@ def create_vm_instance(project_id: str, zone: str, instance_name: str,
     boot_disk = compute_v1.AttachedDisk(
         boot=True,
         auto_delete=True, # Delete the disk when the instance is deleted
-        type_=compute_v1.AttachedDisk.Type.PERSISTENT,
+        type_="PERSISTENT", # Changed to string representation
         initialize_params=compute_v1.AttachedDiskInitializeParams(
             source_image=f"projects/{image_project}/global/images/family/{image_family}",
             disk_size_gb=disk_size_gb,
