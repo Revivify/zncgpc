@@ -40,9 +40,10 @@ def reserve_static_ip(project_id: str, region: str, address_name: str) -> comput
 
         # Wait for the regional operation to complete
         op_start_time = time.time()
+        region_operation_client = compute_v1.RegionOperationsClient()
         while operation.status != compute_v1.Operation.Status.DONE:
             time.sleep(5) # Increased sleep time
-            operation = address_client.get(project=project_id, region=region, operation=operation.name)
+            operation = region_operation_client.get(project=project_id, region=region, operation=operation.name)
             elapsed_time = time.time() - op_start_time
             print(f"INFO: Waiting for IP reservation operation to complete... Status: {operation.status.name} (Elapsed: {elapsed_time:.0f}s)")
             if elapsed_time > 300: # 5 minutes timeout
