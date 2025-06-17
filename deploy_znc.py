@@ -86,7 +86,7 @@ def create_firewall_rule(project_id: str, firewall_rule_name: str, network_name:
     # Define the 'allowed' part of the firewall rule
     allowed_config = [
         compute_v1.Allowed(
-            i_p_protocol=port_protocol.split(":")[0].lower(), # Ensure protocol is lowercase (tcp, udp, icmp, etc.)
+            IP_protocol=port_protocol.split(":")[0].lower(), # Ensure protocol is lowercase (tcp, udp, icmp, etc.)
             ports=[port_protocol.split(":")[1]]
         ) for port_protocol in allowed_ports
     ]
@@ -275,42 +275,28 @@ def assign_static_ip_to_vm(project_id: str, zone: str, instance_name: str, ip_ad
     try:
         print(f"ACTION: Assigning static IP {ip_address} to instance '{instance_name}' in zone '{zone}' (interface '{network_interface_name}')...")
 
-        # Get the current instance details to find the fingerprint of the NIC
-        current_instance = instance_client.get(project=project_id, zone=zone, instance=instance_name)
-        if not current_instance.network_interfaces:
-            print(f"ERROR: Instance '{instance_name}' has no network interfaces.")
-            return False
-
-        nic_to_update = None
-        for nic in current_instance.network_interfaces:
-            if nic.name == network_interface_name:
-                nic_to_update = nic
-                break
-
-        if not nic_to_update:
-            print(f"ERROR: Network interface '{network_interface_name}' not found on instance '{instance_name}'.")
-            return False
-
         # Create a new AccessConfig with the static IP
         # Note: The name "External NAT" for the access config is a common convention.
         new_access_config = compute_v1.AccessConfig(
-            name="External NAT",
+            name="External NAT",  # Standard name for ephemeral/static IP config
             nat_i_p=ip_address,
-            type_="ONE_TO_ONE_NAT", # Standard type for external IP
-            network_tier="STANDARD" # Ensure this matches the reserved IP's tier
+            type_="ONE_TO_ONE_NAT",  # Standard type for external IP
+            network_tier="STANDARD"  # Ensure this matches the reserved IP's tier
         )
 
-        # Update the network interface. This replaces existing access_configs on the NIC.
-        operation = instance_client.update_network_interface(
+        # Add the access config to the instance's network interface.
+        # This method is generally used when an interface exists but doesn't have an external IP,
+        # or to add a new access config if multiple are supported (though typically one external IP per NIC).
+        # If an 'External NAT' access config already exists (e.g., ephemeral), this might fail or create an additional one.
+        # For robustly *setting* or *replacing* an IP, 'update_network_interface' with fingerprint is often more direct
+        # if the goal is to ensure only ONE access config with the static IP.
+        # However, if the VM was created with NO access config, add_access_config is appropriate.
+        operation = instance_client.add_access_config(
             project=project_id,
             zone=zone,
             instance=instance_name,
-            network_interface=network_interface_name, # Name of the NIC (e.g., "nic0")
-            network_interface_resource=compute_v1.NetworkInterface(
-                name=nic_to_update.name,
-                fingerprint=nic_to_update.fingerprint, # IMPORTANT: Fingerprint is required for updates
-                access_configs=[new_access_config] # Set the new access config
-            )
+            network_interface=network_interface_name,  # e.g., "nic0"
+            access_config_resource=new_access_config
         )
 
         op_start_time = time.time()
