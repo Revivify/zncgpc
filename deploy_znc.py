@@ -89,7 +89,7 @@ def create_firewall_rule(project_id: str, firewall_rule_name: str, network_name:
     # Define the 'allowed' part of the firewall rule
     allowed_config = [
         compute_v1.Allowed(
-            ip_protocol=port_protocol.split(":")[0].lower(), # Ensure protocol is lowercase (tcp, udp, icmp, etc.)
+            I_p_protocol=port_protocol.split(":")[0].lower(), # Ensure protocol is lowercase (tcp, udp, icmp, etc.)
             ports=[port_protocol.split(":")[1]]
         ) for port_protocol in allowed_ports
     ]
