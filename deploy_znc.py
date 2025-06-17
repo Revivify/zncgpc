@@ -21,7 +21,10 @@ def reserve_static_ip(project_id: str, region: str, address_name: str) -> comput
         The compute_v1.Address object if successful, None otherwise.
     """
     address_client = compute_v1.AddressesClient()
-    address_resource = compute_v1.Address(name=address_name) # Specify the desired name
+    address_resource = compute_v1.Address(
+        name=address_name,
+        network_tier='STANDARD'  # Specify STANDARD tier for new reservations
+    )
 
     try:
         # Check if the address already exists
@@ -86,7 +89,7 @@ def create_firewall_rule(project_id: str, firewall_rule_name: str, network_name:
     # Define the 'allowed' part of the firewall rule
     allowed_config = [
         compute_v1.Allowed(
-            IP_protocol=port_protocol.split(":")[0].lower(), # Ensure protocol is lowercase (tcp, udp, icmp, etc.)
+            ip_protocol=port_protocol.split(":")[0].lower(), # Ensure protocol is lowercase (tcp, udp, icmp, etc.)
             ports=[port_protocol.split(":")[1]]
         ) for port_protocol in allowed_ports
     ]
